@@ -603,6 +603,12 @@ def mask_image(image_path, args):
         # draw_landmarks(face_landmarks, image)
         six_points_on_face, angle = get_six_points(face_landmarks, image)
         mask = []
+
+        if mask_type == 'kf94':
+            six_points_on_face[0] = face_landmarks['chin'][2]
+            six_points_on_face[1] = face_landmarks['top_lip'][4]
+            six_points_on_face[2] = face_landmarks['chin'][14]
+
         if mask_type != "all":
             if len(masked_images) > 0:
                 image = masked_images.pop(0)

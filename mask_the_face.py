@@ -22,7 +22,7 @@ parser.add_argument(
     "--mask_type",
     type=str,
     default="surgical",
-    choices=["surgical", "N95", "KN95", "cloth", "gas", "inpaint", "random", "all"],
+    choices=["surgical", "N95", "KN95", "cloth", "gas", 'kf94', "inpaint", "random", "all"],
     help="Type of the mask to be applied. Available options: all, surgical_blue, surgical_green, N95, cloth",
 )
 
@@ -43,7 +43,8 @@ parser.add_argument(
 parser.add_argument(
     "--color",
     type=str,
-    default="#0473e2",
+    # default="#0473e2",
+    default=None,
     help="Hex color value that need to be overlayed to the mask",
 )
 
@@ -76,6 +77,7 @@ parser.set_defaults(feature=False)
 
 args = parser.parse_args()
 args.write_path = args.path + "_masked"
+args.write_path_seg = args.path + "_masked_seg"
 
 # Set up dlib face detector and predictor
 args.detector = dlib.get_frontal_face_detector()
@@ -123,8 +125,10 @@ if is_directory:
         image_path = path + "/" + f
 
         write_path = path + "_masked"
-        if not os.path.isdir(write_path):
+        write_path_seg = path + "_masked_seg"
+        if not os.path.isdir(write_path) or not os.path.isdir(write_path):
             os.makedirs(write_path)
+            os.makedirs(write_path_seg)
 
         if is_image(image_path):
             # Proceed if file is image
@@ -136,18 +140,19 @@ if is_directory:
             masked_image, mask, mask_binary_array, original_image = mask_image(
                 image_path, args
             )
-            for i in range(len(mask)):
-                w_path = (
-                    write_path
-                    + "/"
-                    + split_path[0]
-                    + "_"
-                    + mask[i]
-                    + "."
-                    + split_path[1]
-                )
-                img = masked_image[i]
-                cv2.imwrite(w_path, img)
+            for base_path, imgs in [(write_path, masked_image), (write_path_seg, mask_binary_array)]:
+                for i in range(len(mask)):
+                    w_path = (
+                        base_path
+                        + "/"
+                        + split_path[0]
+                        + "_"
+                        + mask[i]
+                        + "."
+                        + split_path[1]
+                    )
+                    img = imgs[i]
+                    cv2.imwrite(w_path, img)
 
     print_orderly("Masking image directories", 60)
 
@@ -208,6 +213,13 @@ elif is_file:
             w_path = write_path + "_" + mask[i] + "." + args.path.rsplit(".")[1]
             img = masked_image[i]
             cv2.imwrite(w_path, img)
+            import matplotlib.pyplot as plt
+            plt.xticks([])
+            plt.yticks([])
+            plt.title(w_path)
+            plt.imshow(mask_binary_array[0])
+            plt.tight_layout()
+            plt.show()
 else:
     print("Path is neither a valid file or a valid directory")
 print("Processing Done")
